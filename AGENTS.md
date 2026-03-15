@@ -99,6 +99,31 @@ For more details, see README.md and docs/QUICKSTART.md.
 
 <!-- END BEADS INTEGRATION -->
 
+## Git Branching Convention
+
+**For every story or fix, create a dedicated branch from `main` before starting implementation.**
+
+```bash
+git checkout main
+git pull
+git checkout -b story/<story-key>   # e.g. story/1-2-database-infrastructure
+# or
+git checkout -b fix/<short-description>
+```
+
+- Branch name mirrors the story key from `sprint-status.yaml`
+- Merge (or PR) back to `main` after code review passes
+- Delete the branch after merge
+
+**Once implementation is complete and all tests pass, commit the work:**
+
+```bash
+git add <changed files>
+git commit -m "feat|fix|chore(<story-key>): <short description>"
+```
+
+Commit message format: use [Conventional Commits](https://www.conventionalcommits.org/) — `feat` for new functionality, `fix` for bug fixes, `chore` for maintenance.
+
 ## Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.

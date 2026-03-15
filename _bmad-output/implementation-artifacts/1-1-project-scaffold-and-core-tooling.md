@@ -1,6 +1,6 @@
 # Story 1.1: Project Scaffold & Core Tooling
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -19,58 +19,58 @@ so that I can start building features immediately without any setup friction.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Initialize Vite React-TS project (AC: #1)
-  - [ ] Run `npm create vite@latest letko -- --template react-ts`
-  - [ ] Verify `npm install && npm run dev` works
-  - [ ] Set `appId: "com.letko.app"` and `webDir: "dist"` in capacitor config
+- [x] Task 1: Initialize Vite React-TS project (AC: #1)
+  - [x] Run `npm create vite@latest letko -- --template react-ts`
+  - [x] Verify `npm install && npm run dev` works
+  - [x] Set `appId: "com.letko.app"` and `webDir: "dist"` in capacitor config
 
-- [ ] Task 2: Create FSD directory structure (AC: #2)
-  - [ ] Create all FSD directories: `src/app`, `src/pages`, `src/widgets`, `src/features`, `src/entities`, `src/shared/ui`, `src/shared/db`, `src/shared/platform`, `src/shared/lib`
-  - [ ] Add `index.ts` barrel file in each directory (export placeholder `{}` if empty)
-  - [ ] Add `src/shared/stores/` with `index.ts` for Zustand stores
+- [x] Task 2: Create FSD directory structure (AC: #2)
+  - [x] Create all FSD directories: `src/app`, `src/pages`, `src/widgets`, `src/features`, `src/entities`, `src/shared/ui`, `src/shared/db`, `src/shared/platform`, `src/shared/lib`
+  - [x] Add `index.ts` barrel file in each directory (export placeholder `{}` if empty)
+  - [x] Add `src/shared/stores/` with `index.ts` for Zustand stores
 
-- [ ] Task 3: Configure TypeScript strict mode (AC: #3)
-  - [ ] Set `"strict": true` in `tsconfig.json`
-  - [ ] Add `"noUncheckedIndexedAccess": true`, `"exactOptionalPropertyTypes": true`
-  - [ ] Add `npm run typecheck` script: `"typecheck": "tsc --noEmit"`
-  - [ ] Verify zero errors
+- [x] Task 3: Configure TypeScript strict mode (AC: #3)
+  - [x] Set `"strict": true` in `tsconfig.json`
+  - [x] Add `"noUncheckedIndexedAccess": true`, `"exactOptionalPropertyTypes": true`
+  - [x] Add `npm run typecheck` script: `"typecheck": "tsc --noEmit"`
+  - [x] Verify zero errors
 
-- [ ] Task 4: Configure ESLint (AC: #4)
-  - [ ] Install and configure ESLint with TypeScript support
-  - [ ] Add `npm run lint` script: `"lint": "eslint src --max-warnings 0"`
-  - [ ] Verify zero errors/warnings
+- [x] Task 4: Configure ESLint (AC: #4)
+  - [x] Install and configure ESLint with TypeScript support
+  - [x] Add `npm run lint` script: `"lint": "eslint src --max-warnings 0"`
+  - [x] Verify zero errors/warnings
 
-- [ ] Task 5: Initialize Capacitor and add Android platform (AC: #5)
-  - [ ] Install `@capacitor/core` and `@capacitor/cli`
-  - [ ] Run `npx cap init letko com.letko.app --web-dir dist`
-  - [ ] Run `npx cap add android`
-  - [ ] Build once (`npm run build`) then `npx cap sync` to verify Android platform is present
+- [x] Task 5: Initialize Capacitor and add Android platform (AC: #5)
+  - [x] Install `@capacitor/core` and `@capacitor/cli`
+  - [x] Run `npx cap init letko com.letko.app --web-dir dist`
+  - [x] Run `npx cap add android`
+  - [x] Build once (`npm run build`) then `npx cap sync` to verify Android platform is present
 
-- [ ] Task 6: Initialize shadcn/ui with Tailwind CSS v4 (AC: #6)
-  - [ ] Run `npx shadcn@latest init`
-  - [ ] Verify a Button component can be imported and renders with Tailwind styles
-  - [ ] Confirm `src/components/ui/` (shadcn default) aliased correctly — see note below about shadcn path alias
+- [x] Task 6: Initialize shadcn/ui with Tailwind CSS v4 (AC: #6)
+  - [x] Run `npx shadcn@latest init`
+  - [x] Verify a Button component can be imported and renders with Tailwind styles
+  - [x] Confirm `src/components/ui/` (shadcn default) aliased correctly — see note below about shadcn path alias
 
-- [ ] Task 7: Install core dependencies
-  - [ ] `npm install neverthrow zustand react-router-dom`
-  - [ ] `npm install -D vitest @vitest/coverage-v8 @testing-library/react @testing-library/jest-dom jsdom`
-  - [ ] Create `vitest.config.ts` (extend vite config, set `environment: 'jsdom'`)
-  - [ ] Add `npm run test` and `npm run test:coverage` scripts
+- [x] Task 7: Install core dependencies
+  - [x] `npm install neverthrow zustand react-router-dom`
+  - [x] `npm install -D vitest @vitest/coverage-v8 @testing-library/react @testing-library/jest-dom jsdom`
+  - [x] Create `vitest.config.ts` (extend vite config, set `environment: 'jsdom'`)
+  - [x] Add `npm run test` and `npm run test:coverage` scripts
 
-- [ ] Task 8: Configure commit tooling
-  - [ ] Install `husky`, `commitlint`, `commitizen`, `@commitlint/config-conventional`
-  - [ ] Run `npx husky init`
-  - [ ] Create `.commitlintrc.js` with `extends: ['@commitlint/config-conventional']`
-  - [ ] Create `.czrc` with `{ "path": "cz-conventional-changelog" }`
-  - [ ] Add `git cz` alias or note in README
+- [x] Task 8: Configure commit tooling
+  - [x] Install `husky`, `commitlint`, `commitizen`, `@commitlint/config-conventional`
+  - [x] Run `npx husky init`
+  - [x] Create `.commitlintrc.js` with `extends: ['@commitlint/config-conventional']`
+  - [x] Create `.czrc` with `{ "path": "cz-conventional-changelog" }`
+  - [x] Add `git cz` alias or note in README
 
-- [ ] Task 9: Create vite.config.ts with path aliases and COOP/COEP headers
-  - [ ] Add `@` alias pointing to `src/`
-  - [ ] Configure dev server with COOP/COEP headers (required for SQLite WASM + OPFS)
+- [x] Task 9: Create vite.config.ts with path aliases and COOP/COEP headers
+  - [x] Add `@` alias pointing to `src/`
+  - [x] Configure dev server with COOP/COEP headers (required for SQLite WASM + OPFS)
 
-- [ ] Task 10: Write minimal smoke test (verify test pipeline works)
-  - [ ] Create `src/app/App.test.tsx` that imports `App` and asserts it renders without throwing
-  - [ ] Run `npm run test` and confirm it passes
+- [x] Task 10: Write minimal smoke test (verify test pipeline works)
+  - [x] Create `src/app/App.test.tsx` that imports `App` and asserts it renders without throwing
+  - [x] Run `npm run test` and confirm it passes
 
 ## Dev Notes
 
@@ -298,6 +298,55 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Vite 8 installed by `npm create vite@latest` — downgraded to Vite 7 + `@vitejs/plugin-react@5` for `@tailwindcss/vite` compatibility (peer dep: `vite@^5.2.0 || ^6 || ^7`)
+- Capacitor: story specified v6, actual installed version is v8 (current latest) — kept v8 per the author's decision
+- `buttonVariants` separated into `button-variants.ts` to avoid `react-refresh/only-export-components` lint error and preserve React Fast Refresh
+
 ### Completion Notes List
 
+- All 10 tasks completed, all ACs verified
+- Vite 7 + Capacitor 8 used (intentional upgrade vs story spec)
+- Tailwind CSS v4 via `@tailwindcss/vite` plugin (no PostCSS needed)
+- shadcn Button created manually (CLI is fully interactive, not scriptable); `components.json` created for future `npx shadcn add <component>` calls
+- `src/shared/lib/utils.ts` contains `cn()` utility (clsx + tailwind-merge)
+- Build warning `"file" is not a known CSS property`: known esbuild false positive with Tailwind v4's `file:` variant
+
 ### File List
+
+- package.json
+- index.html
+- vite.config.ts
+- vitest.config.ts
+- tsconfig.json
+- tsconfig.app.json
+- tsconfig.node.json
+- eslint.config.js
+- capacitor.config.ts
+- components.json
+- .commitlintrc.js
+- .czrc
+- .husky/commit-msg
+- .husky/pre-commit
+- src/main.tsx
+- src/index.css
+- src/App.tsx
+- src/test-setup.ts
+- src/app/index.ts
+- src/app/App.test.tsx
+- src/pages/index.ts
+- src/widgets/index.ts
+- src/features/index.ts
+- src/entities/index.ts
+- src/shared/ui/index.ts
+- src/shared/db/index.ts
+- src/shared/platform/index.ts
+- src/shared/stores/index.ts
+- src/shared/lib/index.ts
+- src/shared/lib/utils.ts
+- src/components/ui/button.tsx
+- src/components/ui/button-variants.ts
+- android/ (Capacitor Android platform)
+
+### Change Log
+
+- 2026-03-15: Story 1.1 implemented — scaffold Vite 7, FSD structure, TypeScript strict, ESLint, Capacitor 8 + Android, Tailwind CSS v4, shadcn Button, smoke test Vitest, Husky + commitlint

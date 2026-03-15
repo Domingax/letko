@@ -2,3 +2,18 @@
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Capacitor
+android/.gradle/
+android/app/build/
+android/build/
+
+# Misc
+.DS_Store
+*.local
