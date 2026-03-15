@@ -138,7 +138,7 @@ vault/
 - `vocabulary` — entries (wordKey, language, status 0–5, translation, notes, updatedAt)
 - `reading_progress` — position (bookId, sectionIndex, tokenIndex, updatedAt)
 
-**Migrations:** Drizzle migrate() runs automatically on app startup.
+**Migrations:** Custom migration runner at app startup (see GAP-06 resolution below). Drizzle's built-in `sqlite-proxy/migrator` cannot be used in browser/WASM — migrations are bundled at build time via Vite `import.meta.glob` and applied through a manual runner that replicates Drizzle's journal-based tracking.
 
 ---
 
@@ -971,6 +971,25 @@ The schema defines 5 tables but no indexes. The performance NFR requires stable 
 - `tokens`: index on `(section_id, index)` — reader loads all tokens for a section in order
 - `reading_progress`: index on `book_id` — one row per book, frequent updates
 
+**GAP-06 — Drizzle migration runner incompatible with browser/WASM**
+
+The built-in `migrate()` from `drizzle-orm/sqlite-proxy/migrator` calls `readMigrationFiles()` internally, which uses Node.js `fs.readFileSync()` — unusable in browser/WASM contexts. Its signature `migrate(db, callback, config)` still requires `config.migrationsFolder` as a filesystem path.
+
+**Alternatives evaluated:**
+
+| Approach | Viable | Trade-off |
+|---|---|---|
+| Custom runner with `import.meta.glob` | **Yes — selected** | Manual tracking table replication, but fully self-contained |
+| Adapt op-sqlite/expo-sqlite migrator pattern | Partial | These accept pre-bundled `Record<string, string>`, but are typed for their own DB classes (`OPSQLiteDatabase`, `ExpoSQLiteDatabase`), not `SqliteRemoteDatabase` — type cast required, fragile across versions |
+| Vite alias to replace `readMigrationFiles` | Yes but fragile | Couples build to Drizzle internal module structure — breaks silently on drizzle-orm updates |
+| Wait for upstream fix | Uncertain | No timeline for a `sqlite-proxy/migrator` that accepts `MigrationMeta[]` |
+
+**Resolution:** Custom migration runner in `shared/db/migrate.ts`. Uses Vite `import.meta.glob` to bundle `migrations/*.sql` and `migrations/meta/_journal.json` at build time. Replicates Drizzle's internal logic: journal-ordered execution, `-->  statement-breakpoint` splitting, `__drizzle_migrations` tracking table with hash and timestamp. Returns `Result<void, string>` via neverthrow.
+
+**Upgrade path:** If Drizzle adds a `sqlite-proxy/migrator` overload accepting `MigrationMeta[]` or `Record<string, string>` (matching the op-sqlite pattern), migrate to the native API. Monitor drizzle-orm changelogs on major version bumps.
+
+---
+
 #### Minor gaps (note in implementation stories, no structural change required)
 
 - FR6 (import progress): local `useState` in `pages/library-page/` — no structural change
@@ -1040,3 +1059,9 @@ The following additions address the critical and important gaps identified above
 
 **DB indexes (to document in schema.ts):**
 - `vocabulary(word_key, language)`, `tokens(section_id, index)`, `reading_progress(book_id)`
+
+**Browser-compatible migration runner (GAP-06):**
+- `drizzle-orm/sqlite-proxy/migrator` requires Node.js filesystem — cannot be used in browser/WASM
+- Custom runner in `shared/db/migrate.ts` bundles SQL via Vite `import.meta.glob` at build time
+- Replicates Drizzle journal parsing, breakpoint splitting, and `__drizzle_migrations` tracking
+- Upgrade path: adopt native `sqlite-proxy/migrator` if Drizzle adds `MigrationMeta[]` overload

@@ -99,6 +99,10 @@ For more details, see README.md and docs/QUICKSTART.md.
 
 <!-- END BEADS INTEGRATION -->
 
+## Code Conventions
+
+- **Drizzle ORM**: Always use Drizzle's typed query builder API (e.g., `db.insert(table).values(...).onConflictDoNothing()`) instead of raw `sql` template literals when the ORM provides an equivalent method.
+
 ## Git Branching Convention
 
 **For every story or fix, create a dedicated branch from `main` before starting implementation.**
