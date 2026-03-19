@@ -1,111 +1,294 @@
-# Agent Instructions
+# Lekto Developer Reference
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+Lekto is a local-first, offline-capable language learning reader for web and Android. Built with React 19, TypeScript ~5.9.3 (strict mode, `noUncheckedIndexedAccess`), Vite 7, Capacitor 8, SQLite (Drizzle ORM), Zustand, shadcn/ui, Tailwind CSS v4, and neverthrow.
 
-## Quick Reference
+This file is the single authoritative reference for all project conventions, architecture rules, and workflow protocols.
 
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git
+---
+
+## FSD Architecture
+
+Lekto uses [Feature-Sliced Design](https://feature-sliced.design/) (FSD).
+
+### Layer Hierarchy
+
+```
+app → pages → widgets → features → entities → shared
 ```
 
-<!-- BEGIN BEADS INTEGRATION -->
-## Issue Tracking with bd (beads)
+**Unidirectional import rule:** a layer may only import from layers to its right. Never import upward.
 
-**IMPORTANT**: This project uses **bd (beads)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
+```typescript
+// Correct
+import { importBook } from '@/features/importBook'
 
-### Why bd?
-
-- Dependency-aware: Track blockers and relationships between issues
-- Git-friendly: Auto-syncs to JSONL for version control
-- Agent-optimized: JSON output, ready work detection, discovered-from links
-- Prevents duplicate tracking systems and confusion
-
-### Quick Start
-
-**Check for ready work:**
-
-```bash
-bd ready --json
+// Wrong — never import from internal paths
+import { parseEpub } from '@/features/importBook/lib/parseEpub'
 ```
 
-**Create new issues:**
+### Barrel File Convention
 
-```bash
-bd create "Issue title" --description="Detailed context" -t bug|feature|task -p 0-4 --json
-bd create "Issue title" --description="What this issue is about" -p 1 --deps discovered-from:bd-123 --json
+Every slice exposes `index.ts` as its public API. Consumers import from the slice root, never from internal files.
+
+### Segment Convention
+
+Every slice uses folder-based segments, even for single files:
+
+| Segment | Purpose | When present |
+|---|---|---|
+| `index.ts` | Public API — only exports visible outside the slice | Always |
+| `ui/` | React components | When slice has UI |
+| `model/` | Business logic, hooks, types | Always |
+| `api/` | External calls (platform adapters, LLM, parsers) | When slice calls external services |
+| `lib/` | Slice-local utilities | When needed |
+| `config/` | Slice-local constants | When needed |
+
+### Current Directory Structure
+
+```
+src/
+├── app/          ← routing, providers, global CSS
+├── pages/        ← Library, Reader, Vocabulary, Settings, VaultSetup
+├── widgets/      ← TranslationPanel, ReaderView, ContinueReadingCard,
+│                    BookListItem, MasterySelector
+├── features/     ← importBook, saveWord, lookupWord, syncVault,
+│                    playTTS, configureAI, deleteBook, manageVocabulary,
+│                    translatePhrase
+├── entities/     ← book, token, vocabularyEntry, readingProgress
+└── shared/
+    ├── ui/       ← shared UI components
+    ├── db/       ← Drizzle schema + migrations + migrate runner
+    ├── platform/ ← adapters: filesystem, TTS, secure storage,
+    │                file picker, in-app-browser
+    ├── stores/   ← Zustand stores (useReaderStore, useVaultStore, useAppStore)
+    └── lib/      ← utils, types, constants, tokenizer/, ai/
 ```
 
-**Claim and update:**
+**Note:** shadcn components live in `src/components/ui/` (not `src/shared/ui/`).
 
-```bash
-bd update bd-42 --status in_progress --json
-bd update bd-42 --priority 1 --json
+---
+
+## Naming Conventions
+
+### File Naming
+
+- **React components:** PascalCase — `BookListItem.tsx`, `TranslationPanel.tsx`
+- **Everything else:** kebab-case — `import-book.ts`, `use-vault.ts`, `drizzle.config.ts`
+- **Test files:** same name + `.test` suffix, co-located — `import-book.test.ts` next to `import-book.ts`
+
+### Code Naming
+
+- **Functions/variables:** camelCase — `importBook`, `wordKey`
+- **Types/interfaces:** PascalCase — `BookEntity`, `VocabEntry`
+- **Zustand stores:** `use[Domain]Store` — `useReaderStore`, `useVaultStore`, `useAppStore`
+- **Platform adapters:** `[capability]Adapter` — `filesystemAdapter`, `ttsAdapter`, `secureStorageAdapter`
+- **Constants:** SCREAMING_SNAKE_CASE — `MAX_VOCAB_ENTRIES`, `DEFAULT_FONT_SIZE`
+
+### Database Naming
+
+- **SQLite columns:** snake_case — `word_key`, `book_id`, `created_at`
+- **TypeScript types:** camelCase — `wordKey`, `bookId`, `createdAt`
+- Drizzle handles the mapping automatically — never manually alias column names
+
+---
+
+## Error Handling
+
+### Result<T, string> Pattern (neverthrow)
+
+All operations that can fail return `Result<T, string>`. No throwing across module boundaries.
+
+```typescript
+import { ok, err, Result } from 'neverthrow'
+
+async function importBook(file: File): Promise<Result<Book, string>> {
+  const parsed = await parseEpub(file)
+  if (!parsed) return err('Failed to parse EPUB')
+  return ok(parsed)
+}
+
+// Consumer — compiler enforces handling both cases
+const result = await importBook(file)
+if (result.isErr()) {
+  // handle inline — never propagate further
+}
 ```
 
-**Complete work:**
+### Rules
 
-```bash
-bd close bd-42 --reason "Completed" --json
+- Use `throw` only for unrecoverable programmer errors (violated invariants)
+- Never `throw` for expected failures (network offline, file not found, invalid key)
+- Never use `.then()/.catch()` chains — always `async/await`
+  - Exception: wrapping third-party APIs inside platform adapters
+- Errors display inline where the action was triggered, never toasts overlaying reading content
+
+---
+
+## State Management
+
+### SQLite → Zustand Hydration
+
+- **SQLite** is the source of truth (persisted data)
+- **Zustand** is the UI/runtime state
+- **React local state** (`useState`) for form inputs and transient UI states
+
+On app startup, features hydrate their relevant Zustand slice from SQLite. Never read from SQLite inside React render — always read from Zustand.
+
+```typescript
+// Startup hydration (once, in app/index.ts)
+const books = await db.select().from(booksTable)
+useVaultStore.setState({ books })
+
+// In component — correct
+const books = useVaultStore(state => state.books)
+
+// Never query SQLite inside a component
 ```
 
-### Issue Types
+### Optimistic Updates
 
-- `bug` - Something broken
-- `feature` - New functionality
-- `task` - Work item (tests, docs, refactoring)
-- `epic` - Large feature with subtasks
-- `chore` - Maintenance (dependencies, tooling)
+Update Zustand immediately on user action, persist to SQLite in the background. Never await the SQLite write before updating the UI.
 
-### Priorities
+### One Store Per Domain
 
-- `0` - Critical (security, data loss, broken builds)
-- `1` - High (major features, important bugs)
-- `2` - Medium (default, nice-to-have)
-- `3` - Low (polish, optimization)
-- `4` - Backlog (future ideas)
+```typescript
+// Correct — separate stores
+useReaderStore    // open book, position, panel, word selection
+useVaultStore     // vault path, books list, connection status
+useAppStore       // aiProvider config, global app state
 
-### Workflow for AI Agents
+// Wrong — everything mixed together
+useGlobalStore
+```
 
-1. **Check ready work**: `bd ready` shows unblocked issues
-2. **Claim your task**: `bd update <id> --status in_progress`
-3. **Work on it**: Implement, test, document
-4. **Discover new work?** Create linked issue:
-   - `bd create "Found bug" --description="Details about what was found" -p 1 --deps discovered-from:<parent-id>`
-5. **Complete**: `bd close <id> --reason "Done"`
+### Loading States
 
-### Auto-Sync
+Use React local state for loading, not Zustand — loading is UI-local, not shared state.
 
-bd automatically syncs with git:
+```typescript
+// Correct
+const [isImporting, setIsImporting] = useState(false)
 
-- Exports to `.beads/issues.jsonl` after changes (5s debounce)
-- Imports from JSONL when newer (e.g., after `git pull`)
-- No manual export/import needed!
+// Wrong (unless loading state is needed across multiple pages)
+useAppStore(state => state.isImporting)
+```
 
-### Important Rules
+---
 
-- ✅ Use bd for ALL task tracking
-- ✅ Always use `--json` flag for programmatic use
-- ✅ Link discovered work with `discovered-from` dependencies
-- ✅ Check `bd ready` before asking "what should I work on?"
-- ❌ Do NOT create markdown TODO lists
-- ❌ Do NOT use external issue trackers
-- ❌ Do NOT duplicate tracking systems
+## Platform Adapters
 
-For more details, see README.md and docs/QUICKSTART.md.
+### Adapter Pattern
 
-<!-- END BEADS INTEGRATION -->
+Every platform capability has an interface + two implementations (web + Android) in `shared/platform/`.
 
-## Code Conventions
+```
+shared/platform/filesystem/
+├── index.ts                   ← exports the active adapter
+├── filesystem.interface.ts
+├── filesystem.web.ts
+└── filesystem.android.ts
+```
 
-- **Drizzle ORM**: Always use Drizzle's typed query builder API (e.g., `db.insert(table).values(...).onConflictDoNothing()`) instead of raw `sql` template literals when the ORM provides an equivalent method.
+The `index.ts` selects the implementation at runtime:
 
-## Git Branching Convention
+```typescript
+export const filesystemAdapter =
+  Capacitor.isNativePlatform()
+    ? androidFilesystem
+    : webFilesystem
+```
 
-**For every story or fix, create a dedicated branch from `main` before starting implementation.**
+### Architectural Boundary
+
+- No feature or widget imports from `@capacitor/*` directly — all platform calls route through `shared/platform/`
+- Business logic only imports the interface, never the platform-specific implementation
+
+### Six Boundaries
+
+| Boundary | Location | Rule |
+|---|---|---|
+| **Platform** | `shared/platform/` | Only location for Capacitor API calls |
+| **Database** | `shared/db/index.ts` | Single db instance; no feature creates its own connection |
+| **Secure storage** | `shared/platform/secure-storage/` | Only location for API key read/write; keys never pass through other layers |
+| **AI** | `shared/lib/ai/` | Only location for LLM API calls; features call `translate()` via interface |
+| **Vault** | `shared/platform/filesystem/` | Only location for vault folder file I/O |
+| **InAppBrowser** | `shared/platform/in-app-browser/` | Only location for opening external URLs; no feature calls `window.open()` or `@capacitor/browser` directly |
+
+---
+
+## TDD Protocol
+
+### Red → Green → Refactor
+
+1. **Red:** Write a failing test first
+2. **Green:** Write the minimum code to make it pass
+3. **Refactor:** Improve structure while keeping tests green
+
+**No production code is written without a prior failing test.**
+
+### Co-location Convention
+
+Test files live next to the source file they test. Never use a separate `__tests__/` directory.
+
+```
+features/importBook/
+├── index.ts
+├── import-book.ts
+├── import-book.test.ts        ← co-located
+└── parse-epub.ts
+```
+
+### Testing Tools
+
+- **Unit tests:** Vitest + React Testing Library (runs in jsdom)
+- **E2E web:** Playwright
+- **E2E Android:** Maestro (run locally before release; CI integration post-MVP)
+- Platform-specific code (SQLite WASM, Capacitor) must be mocked in Vitest/jsdom
+
+---
+
+## Drizzle ORM Convention
+
+- Always use Drizzle's typed query builder (e.g., `db.insert(table).values(...).onConflictDoNothing()`) instead of raw `sql` template literals when the ORM provides an equivalent method
+- Unix timestamps as integers — never Date objects in SQLite
+
+```typescript
+// In Drizzle schema
+updatedAt: integer('updated_at').notNull()
+
+// In UI only
+new Date(entry.updatedAt * 1000).toLocaleDateString()
+```
+
+- Schema location: `src/shared/db/schema.ts`
+- Custom migration runner in `src/shared/db/migrate.ts` — uses `import.meta.glob` to bundle SQL at build time (Drizzle's built-in migrator requires Node.js `fs`, unusable in browser/WASM)
+
+---
+
+## Clean Code Principles
+
+- **Single responsibility:** each function does one thing at one level of abstraction
+- **Expressive naming:** names reveal intent — `parseEpubIntoTokens()` not `process()`
+- **No boolean arguments:** a boolean parameter means a function does two things — split it
+- **Command Query Separation:** a function either does something (command) or returns something (query), never both
+- **DRY — Rule of Three:** first time write it, second time note it, third time abstract it. Premature abstraction is worse than duplication.
+- **No magic numbers:** all constants named in `shared/lib/constants.ts`
+
+---
+
+## Commit Conventions
+
+### Conventional Commits
+
+- `feat:` → minor bump
+- `fix:` → patch bump
+- `BREAKING CHANGE` → major bump
+- Local enforcement: commitlint + husky (pre-commit git hook)
+- Automated versioning: release-please generates CHANGELOG.md + release PR on push to main
+
+### Git Branching
+
+**Every new piece of work MUST start on a dedicated branch from `main`.** Never commit directly to `main`.
 
 ```bash
 git checkout main
@@ -123,33 +306,96 @@ git checkout -b fix/<short-description>
 
 ```bash
 git add <changed files>
-git commit -m "feat|fix|chore(<story-key>): <short description>"
+git commit -m "feat|fix|chore(<scope>): <short description>"
 ```
 
-Commit message format: use [Conventional Commits](https://www.conventionalcommits.org/) — `feat` for new functionality, `fix` for bug fixes, `chore` for maintenance.
+---
 
-## Landing the Plane (Session Completion)
+## Beads Workflow
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+This project uses **bd (beads)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
 
-**MANDATORY WORKFLOW:**
+### Session Start
 
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+1. `bd ready --json` — get the prioritized work queue (unblocked issues)
+2. `bd update <id> --claim` — claim the task before starting
+
+### Mid-Session Discovery
+
+When you discover new work during implementation:
+
+```bash
+bd create "Issue title" --description="Detailed context" -t bug|feature|task -p 0-4 --json
+bd create "Found bug" --description="Details" -p 1 --deps discovered-from:<parent-id> --json
+```
+
+### Issue Types & Priorities
+
+| Type | Use for |
+|---|---|
+| `bug` | Something broken |
+| `feature` | New functionality |
+| `task` | Work item (tests, docs, refactoring) |
+| `epic` | Large feature with subtasks |
+| `chore` | Maintenance (dependencies, tooling) |
+
+| Priority | Meaning |
+|---|---|
+| `0` | Critical (security, data loss, broken builds) |
+| `1` | High (major features, important bugs) |
+| `2` | Medium (default) |
+| `3` | Low (polish, optimization) |
+| `4` | Backlog (future ideas) |
+
+### Landing the Plane (Session End)
+
+**When ending a work session**, complete ALL steps. Work is NOT complete until `git push` succeeds.
+
+1. **Close completed issues** — `bd close <id> --reason "Done"`
+2. **File remaining work** — create issues for anything that needs follow-up
+3. **Run quality gates** (if code changed) — tests, linters, builds
+4. **Sync and push:**
    ```bash
    git pull --rebase
    bd sync
    git push
    git status  # MUST show "up to date with origin"
    ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+5. **Verify** — all changes committed AND pushed
 
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+**Critical:** unpushed work blocks other agents. Never stop before pushing.
+
+### Auto-Sync
+
+bd automatically syncs with git:
+- Exports to `.beads/issues.jsonl` after changes (5s debounce)
+- Imports from JSONL when newer (e.g., after `git pull`)
+
+### Rules
+
+- Always use `--json` flag for programmatic use
+- Link discovered work with `discovered-from` dependencies
+- Check `bd ready` before asking "what should I work on?"
+- Do NOT create markdown TODO lists or use external issue trackers
+
+---
+
+## Enforcement Checklist
+
+Anti-patterns to reject — quick-scan list:
+
+- [ ] Direct Capacitor API calls outside `shared/platform/`
+- [ ] `throw` statements for expected failure modes outside adapter wrappers
+- [ ] `.then()/.catch()` chains in feature code
+- [ ] Imports crossing FSD layer boundaries upward
+- [ ] Importing from internal slice paths instead of barrel `index.ts`
+- [ ] Global loading state in Zustand for UI-local operations
+- [ ] Date objects stored in SQLite (use integer timestamps)
+- [ ] Boolean function arguments
+- [ ] Magic numbers inline in code
+- [ ] `useGlobalStore` or single monolithic Zustand store
+- [ ] SQLite queries inside React components
+- [ ] Raw `sql` template literals when Drizzle provides a typed equivalent
+- [ ] Toasts or modal alerts overlaying reading content for error display
+- [ ] Test files in `__tests__/` directories instead of co-located
+- [ ] Manual column name aliasing in Drizzle (it auto-maps snake_case → camelCase)
