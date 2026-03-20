@@ -15,10 +15,15 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^8.0.0",
     "@capacitor-community/sqlite": "^8.0.1",
+    "@capacitor-community/text-to-speech": "^8.0.0",
     "@capacitor/android": "^8.2.0",
+    "@capacitor/browser": "^8.0.2",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capawesome/capacitor-file-picker": "^8.0.2",
     "@radix-ui/react-slot": "^1.2.4",
     "@sqlite.org/sqlite-wasm": "^3.51.2-build7",
     "@tailwindcss/vite": "^4.2.1",
