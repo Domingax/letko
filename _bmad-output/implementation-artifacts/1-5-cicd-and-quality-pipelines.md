@@ -1,6 +1,6 @@
 # Story 1.5: CI/CD & Quality Pipelines
 
-Status: review
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -147,6 +147,16 @@ so that no broken code reaches main and releases are fully automated.
   - [x] `npm run test` — all tests pass
   - [x] `npm run build` — succeeds (note: `tsc -b` has pre-existing type errors from story 1.4; `vite build` succeeds)
   - [x] `npm run test:e2e` — smoke test passes
+
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][HIGH] main.yml skips typecheck entirely — uses `npx vite build` instead of `npm run build` and has no `npm run typecheck` step. Pushes to main deploy without type validation. Add `npm run typecheck` step to main.yml [.github/workflows/main.yml]
+- [ ] [AI-Review][HIGH] release.yml skips typecheck — uses `npx vite build` without any typecheck step. Release builds have no type validation. Add `npm run typecheck` step to release.yml [.github/workflows/release.yml]
+- [ ] [AI-Review][MEDIUM] PR workflow jobs (codeql, sonarcloud) run in parallel with quality-gate, not sequentially after it as AC #1 wording implies. Functionally acceptable (all block merge) but diverges from AC spec. Consider adding `needs: quality-gate` to codeql and sonarcloud jobs [.github/workflows/pr.yml]
+- [ ] [AI-Review][MEDIUM] All workflows use `npx vite build` bypassing `tsc -b` — documented workaround for story 1.4 type errors. Track as tech debt: restore `npm run build` once story 1.4 type errors are resolved [.github/workflows/pr.yml, main.yml, release.yml]
+- [ ] [AI-Review][MEDIUM] Playwright webServer.command uses `npx vite build` instead of `npm run build` — same tsc bypass propagated to local E2E config [playwright.config.ts:21]
+- [ ] [AI-Review][LOW] coi-serviceworker.js script tag placed in `<body>` rather than `<head>` — functionally correct but differs from story spec "before any other scripts" [index.html:11]
+- [ ] [AI-Review][LOW] sonar-project.properties has placeholder org/project keys — SonarCloud job will fail until user configures real values. Expected but undocumented in workflow as a `continue-on-error` or conditional [sonar-project.properties]
 
 ## Dev Notes
 
