@@ -419,6 +419,44 @@ Modified files:
 - .gitignore (coverage/, playwright dirs)
 - index.html (coi-serviceworker.js script tag)
 
+### Post-Implementation Changes (Review Phase — 2026-03-21)
+
+Three tools initially implemented as GitHub Actions jobs were replaced by GitHub's native integrations during the PR review phase. The functional requirement (block merge on quality failure) is preserved — only the execution mechanism changed.
+
+#### Dependabot — `.github/dependabot.yml` removed
+
+**Initially:** A `.github/dependabot.yml` was created (Commit 6 / Task 9) to configure weekly dependency updates for npm and GitHub Actions ecosystems.
+
+**Changed to:** GitHub native Dependabot integration, activated directly in the repository settings. The `.github/dependabot.yml` file was deleted — the native integration supersedes it and requires no config file.
+
+**Impact on AC:** None. Dependency alerts and automated PRs still run.
+
+#### SonarCloud — `sonarcloud` job removed from `pr.yml`
+
+**Initially:** A dedicated `sonarcloud` job in `pr.yml` ran `npm run test:coverage` then `SonarSource/sonarqube-scan-action@v5` to push analysis results to SonarCloud. The `sonar-project.properties` contained placeholder org/project keys.
+
+**Changed to:** GitHub native SonarCloud integration (activated in SonarCloud project settings). Analysis runs automatically on every PR via the native integration. The `sonar-project.properties` was updated with real values (`sonar.organization=domingax`, `sonar.projectKey=Domingax_letko`).
+
+Additionally, the **SonarQube MCP server** was configured for Claude Code:
+- `.mcp.json` added at project root with the native SonarQube Cloud MCP endpoint (`https://api.sonarcloud.io/mcp`, `http` type)
+- `SONAR_TOKEN` stored in `.claude/settings.local.json` (not committed)
+- This allows Claude Code to query SonarCloud analysis results directly (quality gate status, new issues, security hotspots) — used in the dev-pipeline review phase
+
+**Impact on AC:** None. SonarCloud analysis still runs on every PR and blocks merge on quality gate failure. Coverage is still reported via `coverage/lcov.info` (the `quality-gate` job still generates it).
+
+#### CodeQL — `codeql` job removed from `pr.yml`
+
+**Initially:** A dedicated `codeql` job in `pr.yml` ran `github/codeql-action/init@v3` + `github/codeql-action/analyze@v3` for JavaScript/TypeScript SAST analysis.
+
+**Changed to:** GitHub native CodeQL integration, available for public repositories. Activated directly in the repository's Security settings. Analysis runs on the same triggers (PRs to main) with identical language configuration.
+
+**Impact on AC:** None. CodeQL SAST analysis still runs on every PR and the check still blocks merge on findings.
+
+#### Net result
+
+The `pr.yml` workflow now contains a single job (`quality-gate`) covering lint, typecheck, unit tests with coverage, build, and Playwright E2E. All three external analysis tools (Dependabot, SonarCloud, CodeQL) run via native GitHub integrations — lighter workflow, less duplication, no secrets to manage in CI for analysis tools.
+
 ### Change Log
 
 - 2026-03-21: Story 1.5 implemented — CI/CD pipelines, Playwright E2E, Vitest coverage, COOP/COEP service worker, SonarCloud, CodeQL, Dependabot
+- 2026-03-21: Post-review — replaced Dependabot config, SonarCloud Action, and CodeQL Action with GitHub native integrations; added SonarQube MCP server for Claude Code; updated sonar-project.properties with real project keys
