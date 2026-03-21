@@ -1,2 +1,11 @@
-// Platform adapters (populated in Story 1.4)
-export {}
+export { filesystemAdapter } from './filesystem'
+export { ttsAdapter } from './tts'
+export { secureStorageAdapter } from './secure-storage'
+export { filePickerAdapter } from './file-picker'
+export { inAppBrowserAdapter } from './in-app-browser'
+
+export type { FilesystemAdapter } from './filesystem'
+export type { TtsAdapter } from './tts'
+export type { SecureStorageAdapter } from './secure-storage'
+export type { FilePickerAdapter, PickedFile } from './file-picker'
+export type { InAppBrowserAdapter } from './in-app-browser'
