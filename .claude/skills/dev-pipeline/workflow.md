@@ -139,36 +139,46 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
       - Story file: {{story_path}}
       - PR already created: #{{pr_number}} ({{pr_url}})
 
-      ## Phase A — Code Review
+      ## Phase A — Context Loading
 
       1. Read the story file at: {{story_path}}
       2. Load project context from `_bmad/bmm/config.yaml` and `**/project-context.md` if it exists
       3. Load AGENTS.md for coding standards
-      4. Perform an adversarial code review following the process in `.claude/skills/bmad-code-review/workflow.md`
+      4. Read the current PR body with `gh pr view #{{pr_number}} --json body` and extract the **Dev Summary**
+         section if present — use it as context on the dev agent's choices (workarounds, approach, decisions)
+         before reviewing the code
+
+      ## Phase B — Code Review
+
+      5. Perform an adversarial code review following the process in `.claude/skills/bmad-code-review/workflow.md`
          - BUT skip Step 4's interactive prompt — instead, automatically choose option 2 (create action items)
          - Let Step 5 run normally (it handles sprint status updates)
-      5. Collect all findings (HIGH, MEDIUM, LOW)
-      6. Determine a preliminary verdict based on code review:
+      6. Collect all findings (HIGH, MEDIUM, LOW)
+      7. Determine a preliminary verdict based on code review:
          - APPROVED = no HIGH issues found
          - CHANGES REQUESTED = at least one HIGH issue exists
 
-      ## Phase B — SonarCloud Analysis
+      ## Phase C — SonarCloud Analysis
 
-      7. Query SonarCloud via MCP to enrich the review:
+      8. Query SonarCloud via MCP to enrich the review:
          - `mcp__sonarqube__get_project_quality_gate_status` — overall quality gate pass/fail
          - `mcp__sonarqube__search_sonar_issues_in_projects` filtered on new code — issues introduced by this PR
          - `mcp__sonarqube__search_security_hotspots` — any unresolved security hotspots
 
-      8. Merge SonarCloud findings into the verdict:
+      9. Merge SonarCloud findings into the verdict:
          - If quality gate FAILS or new BLOCKER/CRITICAL issues found → CHANGES REQUESTED
-         - Otherwise keep the preliminary verdict from Phase A
+         - Otherwise keep the preliminary verdict from Phase B
 
-      ## Phase C — Update PR
+      ## Phase D — Update PR
 
-      9. If action items were created in the story file, commit and push those changes
+      10. If action items were created in the story file, commit and push those changes
 
-      10. Update the PR body using `gh pr edit #{{pr_number}} --body "..."` with the full report:
+      11. Update the PR body using `gh pr edit #{{pr_number}} --body "..."` — structure:
+          - If a Dev Summary section was found in step 4: keep it first, verbatim
+          - Then append the review report below it
           ```
+          <Dev Summary section verbatim, if it existed — omit this line if absent>
+
           ## Summary
           - <1-3 bullet points summarizing the story implementation>
 
