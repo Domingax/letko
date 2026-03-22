@@ -81,12 +81,32 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
       <action>Send desktop notification: `notify-send "Letko Pipeline" "❌ Git push failed — action needed"`</action>
     </check>
 
+    <!-- Dev Summary self-assessment -->
+    <action>Self-assess whether the implementation warrants a Dev Summary section in the PR body.
+      Include a Dev Summary if ANY of the following apply:
+      - A non-trivial or non-obvious implementation approach was chosen
+      - Conscious workarounds or shortcuts were applied (e.g. bypassing a tool, using an alternative command)
+      - A complex or non-obvious architecture decision was made
+
+      Omit the Dev Summary for straightforward stories with no surprises.
+
+      If including, draft the section:
+        ```
+        ## Dev Summary
+        - <what was done and why, if approach was non-trivial>
+        - <any workarounds and the reason>
+        - <architecture decisions not obvious from the diff>
+        ```
+      Capture as: {{dev_summary_section}} (empty string if omitted)
+    </action>
+
     <!-- Create PR -->
     <action>Create the Pull Request with `gh pr create`:
       - Target branch: main
       - Title: "feat: story {{story_key}} — {{story_title_short}}"
-      - Body (placeholder, will be updated by review agent):
+      - Body ({{dev_summary_section}} prepended if non-empty, then placeholder for review agent):
         ```
+        {{dev_summary_section}}
         ## Summary
         _Pending code review..._
 
