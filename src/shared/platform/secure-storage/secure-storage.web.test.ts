@@ -17,7 +17,7 @@ describe('SecureStorageAdapter (web)', () => {
     const { SecureStorage } = await import('@aparajita/capacitor-secure-storage')
     vi.mocked(SecureStorage.get).mockResolvedValue('stored-value')
     vi.mocked(SecureStorage.set).mockResolvedValue(undefined)
-    vi.mocked(SecureStorage.remove).mockResolvedValue(undefined)
+    vi.mocked(SecureStorage.remove).mockResolvedValue(true)
 
     const { createWebSecureStorageAdapter } = await import('./secure-storage.web')
     adapter = createWebSecureStorageAdapter()
