@@ -31,7 +31,7 @@ export function createWebFilePickerAdapter(): FilePickerAdapter {
             multiple: false,
             types:
               accept.length > 0
-                ? [{ description: 'Files', accept: { 'application/octet-stream': accept } }]
+                ? [{ description: 'Files', accept: { 'application/octet-stream': accept as `.${string}`[] } }]
                 : undefined,
           })
           const file = await handle.getFile()

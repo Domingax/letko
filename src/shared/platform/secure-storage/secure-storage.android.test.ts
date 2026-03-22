@@ -17,7 +17,7 @@ describe('SecureStorageAdapter (android)', () => {
     const { SecureStorage } = await import('@aparajita/capacitor-secure-storage')
     vi.mocked(SecureStorage.get).mockResolvedValue('stored-value')
     vi.mocked(SecureStorage.set).mockResolvedValue(undefined)
-    vi.mocked(SecureStorage.remove).mockResolvedValue(undefined)
+    vi.mocked(SecureStorage.remove).mockResolvedValue(true)
 
     const { createAndroidSecureStorageAdapter } = await import('./secure-storage.android')
     adapter = createAndroidSecureStorageAdapter()
