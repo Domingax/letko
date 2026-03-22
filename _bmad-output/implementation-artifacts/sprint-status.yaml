@@ -46,8 +46,8 @@ development_status:
   1-2-database-infrastructure: done
   1-3-agents-md-and-developer-reference: done
   1-4-platform-adapters-and-error-handling-foundation: done
-  1-5-cicd-and-quality-pipelines: in-progress
-  epic-1-retrospective: optional
+  1-5-cicd-and-quality-pipelines: done
+  epic-1-retrospective: done
 
   # Epic 2: Vault & First Launch
   epic-2: backlog
