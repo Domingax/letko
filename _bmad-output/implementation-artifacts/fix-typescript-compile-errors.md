@@ -1,6 +1,6 @@
 # Story: fix(types) — resolve 9 TypeScript compile errors blocking tsc -b
 
-Status: review
+Status: done
 
 GitHub Issue: #5
 
@@ -58,6 +58,11 @@ Story 1.4 left 9 TypeScript type errors that prevent `npm run build` from comple
   - [x] `npm run typecheck` — exits 0
   - [x] `npm run test` — 73/73 tests pass (15 test files)
   - [x] `npm run lint` — zero warnings/errors
+
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][MEDIUM] `sqlite3.oo1 as any` makes entire `oo` usage untyped — cascading `as typeof oo.DB` on line 21 is vacuous since `oo` is `any`. Acceptable workaround for incomplete upstream `@sqlite.org/sqlite-wasm` types, but track for removal when upstream publishes proper oo1 typings [src/shared/db/index.ts:19]
+- [ ] [AI-Review][LOW] `accept as `.${string}`[]` cast masks a semantic gap in `FilePickerAdapter` interface — `accept` is typed as `string[]` but `showOpenFilePicker` expects extension strings. Consider tightening the interface type to `` `.${string}`[] `` to catch misuse at compile time [src/shared/platform/file-picker/file-picker.web.ts:34]
 
 ## Dev Agent Record
 
