@@ -350,6 +350,16 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
     </check>
 
     <action>Save the story file</action>
+
+    <!-- COMMIT BOUNDARY CHECK -->
+    <critical>Story files may define commit groups via "### Commit N:" headers. Each group MUST result in its own git commit.</critical>
+    <action>Check if the NEXT incomplete task belongs to a DIFFERENT "Commit N:" group than the task just completed</action>
+    <check if="commit group boundary crossed (next task is under a different '### Commit N:' header)">
+      <action>Stage all files changed during this commit group (source, tests, config — NOT .env, credentials, node_modules/, dist/, .claude/settings.local.json)</action>
+      <action>Create a git commit using the exact message from the "### Commit N:" header (e.g., `feat(test): add Vitest coverage thresholds and Playwright E2E infrastructure`)</action>
+      <output>📦 Committed: {{commit_header_message}}</output>
+    </check>
+
     <action>Determine if more incomplete tasks remain</action>
     <action if="more tasks remain">
       <goto step="5">Next task</goto>
