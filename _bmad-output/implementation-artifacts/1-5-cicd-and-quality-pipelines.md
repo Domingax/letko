@@ -228,7 +228,7 @@ AC #4 (commitlint rejects bad commit messages) is **already satisfied** — husk
 | `googleapis/release-please-action` | `@v4` | Release automation |
 | `github/codeql-action/init` | `@v3` | CodeQL SAST init |
 | `github/codeql-action/analyze` | `@v3` | CodeQL SAST analysis |
-| `SonarSource/sonarqube-scan-action` | `@v5` | SonarCloud scan (replaces deprecated `sonarcloud-github-action`) |
+| `SonarSource/sonarcloud-github-action` | `@v3` (pinned by SHA) | SonarCloud scan — reads `sonar-project.properties` |
 | `softprops/action-gh-release` | `@v2` | Attach APK to GitHub Release |
 
 ### Required GitHub Secrets (User Must Configure in Repo Settings)
@@ -431,18 +431,22 @@ Three tools initially implemented as GitHub Actions jobs were replaced by GitHub
 
 **Impact on AC:** None. Dependency alerts and automated PRs still run.
 
-#### SonarCloud — `sonarcloud` job removed from `pr.yml`
+#### SonarCloud — reverted to CI-based scanner after native integration limitations
 
 **Initially:** A dedicated `sonarcloud` job in `pr.yml` ran `npm run test:coverage` then `SonarSource/sonarqube-scan-action@v5` to push analysis results to SonarCloud. The `sonar-project.properties` contained placeholder org/project keys.
 
-**Changed to:** GitHub native SonarCloud integration (activated in SonarCloud project settings). Analysis runs automatically on every PR via the native integration. The `sonar-project.properties` was updated with real values (`sonar.organization=domingax`, `sonar.projectKey=Domingax_letko`).
+**Intermediate state:** Switched to GitHub native SonarCloud integration (Automatic Analysis). The `sonar-project.properties` was updated with real values (`sonar.organization=domingax`, `sonar.projectKey=Domingax_letko`). The dedicated `sonarcloud` job was removed from `pr.yml`.
+
+**Problem discovered:** Automatic Analysis does not read `sonar-project.properties`. Exclusions (`public/coi-serviceworker.js`), coverage paths (`sonar.javascript.lcov.reportPaths`), and other settings were silently ignored.
+
+**Final state:** Reverted to CI-based scanner using `SonarSource/sonarcloud-github-action@v3` (pinned by SHA). Automatic Analysis disabled in SonarCloud UI (`Administration > Analysis Method`). The scan is now a step inside the `quality-gate` job in `pr.yml` (after E2E tests) and inside `quality-and-deploy` in `main.yml` (after unit tests with coverage). Both jobs use `fetch-depth: 0` for accurate new-code detection.
 
 Additionally, the **SonarQube MCP server** was configured for Claude Code:
 - `.mcp.json` added at project root with the native SonarQube Cloud MCP endpoint (`https://api.sonarcloud.io/mcp`, `http` type)
-- `SONAR_TOKEN` stored in `.claude/settings.local.json` (not committed)
+- `SONAR_TOKEN` stored in `.claude/settings.local.json` (not committed) and as a GitHub repository secret
 - This allows Claude Code to query SonarCloud analysis results directly (quality gate status, new issues, security hotspots) — used in the dev-pipeline review phase
 
-**Impact on AC:** None. SonarCloud analysis still runs on every PR and blocks merge on quality gate failure. Coverage is still reported via `coverage/lcov.info` (the `quality-gate` job still generates it).
+**Impact on AC:** None. SonarCloud analysis still runs on every PR and blocks merge on quality gate failure. Coverage is correctly reported via `coverage/lcov.info`.
 
 #### CodeQL — `codeql` job removed from `pr.yml`
 
@@ -454,9 +458,10 @@ Additionally, the **SonarQube MCP server** was configured for Claude Code:
 
 #### Net result
 
-The `pr.yml` workflow now contains a single job (`quality-gate`) covering lint, typecheck, unit tests with coverage, build, and Playwright E2E. All three external analysis tools (Dependabot, SonarCloud, CodeQL) run via native GitHub integrations — lighter workflow, less duplication, no secrets to manage in CI for analysis tools.
+The `pr.yml` workflow contains a single job (`quality-gate`) covering lint, typecheck, unit tests with coverage, build, Playwright E2E, and SonarCloud scan. Dependabot and CodeQL run via native GitHub integrations. SonarCloud runs via CI scanner so that `sonar-project.properties` (exclusions, coverage paths) is fully respected.
 
 ### Change Log
 
 - 2026-03-21: Story 1.5 implemented — CI/CD pipelines, Playwright E2E, Vitest coverage, COOP/COEP service worker, SonarCloud, CodeQL, Dependabot
 - 2026-03-21: Post-review — replaced Dependabot config, SonarCloud Action, and CodeQL Action with GitHub native integrations; added SonarQube MCP server for Claude Code; updated sonar-project.properties with real project keys
+- 2026-03-22: Reverted SonarCloud to CI-based scanner (`sonarcloud-github-action@v3`) after discovering Automatic Analysis ignores `sonar-project.properties`; disabled Automatic Analysis in SonarCloud UI; added `SONAR_TOKEN` GitHub secret; added `fetch-depth: 0` to checkout in pr.yml and main.yml
