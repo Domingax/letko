@@ -14,11 +14,11 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 
 export function createAndroidFilePickerAdapter(): FilePickerAdapter {
   return {
-    async pickFile(options: { accept?: string[] }): AsyncResult<PickedFile> {
+    async pickFile(options: { accept?: `.${string}`[] }): AsyncResult<PickedFile> {
       try {
         const result = await FilePicker.pickFiles({
-          types: options.accept,
-          multiple: false,
+          ...(options.accept !== undefined && { types: options.accept }),
+          limit: 1,
           readData: true,
         })
         const file = result.files[0]
@@ -32,7 +32,7 @@ export function createAndroidFilePickerAdapter(): FilePickerAdapter {
 
     async pickDirectory(): AsyncResult<string> {
       try {
-        const result = await FilePicker.pickFiles({ multiple: false })
+        const result = await FilePicker.pickFiles({ limit: 1 })
         const file = result.files[0]
         if (!file) return err('No directory selected')
         const path = file.path

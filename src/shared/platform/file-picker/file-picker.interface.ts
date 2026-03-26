@@ -6,6 +6,6 @@ export interface PickedFile {
 }
 
 export interface FilePickerAdapter {
-  pickFile(options: { accept?: string[] }): AsyncResult<PickedFile>
+  pickFile(options: { accept?: `.${string}`[] }): AsyncResult<PickedFile>
   pickDirectory(): AsyncResult<string>
 }

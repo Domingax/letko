@@ -16,8 +16,8 @@ async function createWebDb(): Promise<DrizzleDb> {
 
   // OPFS requires COOP/COEP headers — already configured in vite.config.ts
   const oo = sqlite3.oo1;
-  const DbClass = "OpfsDb" in oo ? oo.OpfsDb : oo.DB;
-  const rawDb = new (DbClass as typeof oo.DB)("/lekto.db", "ct");
+  const DbClass = oo.OpfsDb ?? oo.DB;
+  const rawDb = new DbClass("/lekto.db", "ct");
 
   return drizzle(
     async (sql, params, method) => {
