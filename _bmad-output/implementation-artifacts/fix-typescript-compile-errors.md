@@ -61,8 +61,9 @@ Story 1.4 left 9 TypeScript type errors that prevent `npm run build` from comple
 
 ### Review Follow-ups (AI)
 
-- [ ] [AI-Review][MEDIUM] `sqlite3.oo1 as any` makes entire `oo` usage untyped — cascading `as typeof oo.DB` on line 21 is vacuous since `oo` is `any`. Acceptable workaround for incomplete upstream `@sqlite.org/sqlite-wasm` types, but track for removal when upstream publishes proper oo1 typings [src/shared/db/index.ts:19]
-- [ ] [AI-Review][LOW] `accept as `.${string}`[]` cast masks a semantic gap in `FilePickerAdapter` interface — `accept` is typed as `string[]` but `showOpenFilePicker` expects extension strings. Consider tightening the interface type to `` `.${string}`[] `` to catch misuse at compile time [src/shared/platform/file-picker/file-picker.web.ts:34]
+- [x] [AI-Review][MEDIUM] ~~`sqlite3.oo1 as any` makes entire `oo` usage untyped~~ — Fixed in e6ad513: replaced `as any` + vacuous `as typeof oo.DB` with `oo.OpfsDb ?? oo.DB` (no casts needed) [src/shared/db/index.ts:18]
+- [x] [AI-Review][LOW] ~~`accept as `.${string}`[]` cast masks semantic gap~~ — Fixed in e6ad513: tightened `FilePickerAdapter.accept` interface type to `` `.${string}`[] ``, eliminating the cast [src/shared/platform/file-picker/file-picker.interface.ts:9]
+- [ ] [AI-Review][LOW] `file-picker.interface.ts` was modified but not listed in File List — documentation gap only [src/shared/platform/file-picker/file-picker.interface.ts]
 
 ## Dev Agent Record
 
@@ -83,8 +84,9 @@ All 9 TypeScript errors resolved. `npm run build` now uses `tsc -b` for full typ
 - `package.json` — added `@types/wicg-file-system-access` devDependency
 - `package-lock.json` — updated lockfile
 - `src/shared/db/index.ts` — cast `sqlite3.oo1 as any`
+- `src/shared/platform/file-picker/file-picker.interface.ts` — tightened `accept` type from `string[]` to `` `.${string}`[] ``
 - `src/shared/platform/file-picker/file-picker.android.ts` — replaced `multiple: false` with `limit: 1`, used conditional spread for `types`
-- `src/shared/platform/file-picker/file-picker.web.ts` — cast `accept as `.${string}`[]`
+- `src/shared/platform/file-picker/file-picker.web.ts` — updated `accept` param type to match tightened interface
 - `src/shared/platform/secure-storage/secure-storage.android.test.ts` — `mockResolvedValue(true)` for `remove`
 - `src/shared/platform/secure-storage/secure-storage.web.test.ts` — `mockResolvedValue(true)` for `remove`
 
