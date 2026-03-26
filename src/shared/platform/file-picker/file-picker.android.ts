@@ -14,7 +14,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 
 export function createAndroidFilePickerAdapter(): FilePickerAdapter {
   return {
-    async pickFile(options: { accept?: string[] }): AsyncResult<PickedFile> {
+    async pickFile(options: { accept?: `.${string}`[] }): AsyncResult<PickedFile> {
       try {
         const result = await FilePicker.pickFiles({
           ...(options.accept !== undefined && { types: options.accept }),

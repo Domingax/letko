@@ -23,7 +23,7 @@ function pickFileViaInput(accept: string[]): Promise<PickedFile> {
 
 export function createWebFilePickerAdapter(): FilePickerAdapter {
   return {
-    async pickFile(options: { accept?: string[] }): AsyncResult<PickedFile> {
+    async pickFile(options: { accept?: `.${string}`[] }): AsyncResult<PickedFile> {
       const accept = options.accept ?? []
       try {
         if (typeof showOpenFilePicker === 'function') {
@@ -31,7 +31,7 @@ export function createWebFilePickerAdapter(): FilePickerAdapter {
             multiple: false,
             types:
               accept.length > 0
-                ? [{ description: 'Files', accept: { 'application/octet-stream': accept as `.${string}`[] } }]
+                ? [{ description: 'Files', accept: { 'application/octet-stream': accept } }]
                 : undefined,
           })
           const file = await handle.getFile()
