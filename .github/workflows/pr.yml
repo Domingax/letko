@@ -32,7 +32,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Build
-        run: npx vite build
+        run: npm run build
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
